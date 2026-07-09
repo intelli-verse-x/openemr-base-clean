@@ -132,9 +132,12 @@ async def get_lab_results(principal: Principal, pid: int) -> ToolResult:
             units = r.get("units") or ""
             abn = (r.get("abnormal") or "").strip()
             eff = clean_date(r.get("result_date") or r.get("date_report"))
+            # Show the date inline so a physician never mistakes a stale value for a current one.
+            dtxt = f" ({eff})" if eff else " (date unknown)"
+            abntxt = f" [{abn}]" if abn else ""
             facts.append(_fact(
                 f"lab:{i}:{r.get('result_code')}", "lab_result",
-                f"{name}: {val} {units}".strip(),
+                f"{name}: {val} {units}{abntxt}{dtxt}".strip(),
                 SourceType.lab_result, str(r.get("result_code") or i),
                 f"{name} {val}{units} {('['+abn+']') if abn else ''} {eff or ''}".strip(),
                 detail={"units": units, "range": r.get("range"), "abnormal": abn or None,
@@ -194,8 +197,10 @@ async def get_vitals(principal: Principal, pid: int) -> ToolResult:
                     summ.append(f"{lbl} {_num(r[col])}")
             if not summ:
                 continue
+            # Date inline: a "pre-visit summary" must not present old vitals as current.
+            dtxt = f" ({eff})" if eff else " (date unknown)"
             facts.append(_fact(
-                f"vital:{r['id']}", "vital", ", ".join(summ), SourceType.vital,
+                f"vital:{r['id']}", "vital", f"{', '.join(summ)}{dtxt}", SourceType.vital,
                 str(r["id"]), f"vitals {eff}: {', '.join(summ)}", eff=eff,
             ))
         return ToolResult(facts=facts, missing=[] if facts else ["no vitals on file"])

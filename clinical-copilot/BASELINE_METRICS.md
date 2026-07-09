@@ -24,6 +24,21 @@ latency; the fast model typically adds ~0.5–2 s, synthesis ~2–5 s — still 
 | phpmyadmin | ~0.01% | ~45 MiB |
 | agent service (python) | <5% single core under 50-user load | ~90–120 MiB RSS |
 
+## Deployed baseline (EKS, live)
+
+Confirmed on the public deployment (`clinical-copilot.intelli-verse-x.ai`, 2 replicas,
+arm64 nodes) via `kubectl top`. Idle-to-light load:
+
+| Pod | CPU (cores) | Memory |
+|---|---:|---:|
+| clinical-copilot (replica 1) | 2m | 40 Mi |
+| clinical-copilot (replica 2) | 1m | 40 Mi |
+| copilot-mariadb | 3m | 204 Mi |
+
+A live 50-concurrent burst against the public URL returned **50/50 HTTP 200**, wall-clock
+p95 ~0.98 s (dominated by client→us-east-1 RTT; server-side latency stays 1–7 ms per the
+structured logs). Requests: `kubectl -n clinical-copilot top pods`.
+
 ## How to reproduce
 
 ```bash

@@ -82,7 +82,8 @@ Every tool returns `{ facts: [{id, source_type, source_uuid, value, ...}], missi
 - **Correlation ID** per invocation in every log/tool/LLM span (engineering req).
 - Langfuse: latency per step, tool pass/fail, tokens + cost, verification outcome.
 - Dashboard: request/error counts, p50/p95 latency, tool-call + retry counts, verification pass rate. **3 alerts:** p95 latency, error rate, tool-failure rate.
-- `/health` (liveness) and `/ready` (validates OpenEMR API, LLM, Langfuse reachable — not unconditional 200).
+- **Queue depth / event retries — N/A by design.** The agent is synchronous request/response (physician sends a message, gets an answer); there is no message queue or async event bus. The engineering-req "queue depth / event retries" line is therefore not applicable. We track the equivalent liveness signals instead: LLM/tool **retry counters** and per-request **decision outcomes** (`ok` / `degraded` / `denied`) as Prometheus labels, which is what a queue-depth metric would otherwise proxy for here.
+- `/health` (liveness) and `/ready` (validates OpenEMR DB, LLM, Langfuse reachable — not unconditional 200).
 - Failure modes: tool error → explicit degraded message; missing data → stated, not hidden; LLM malformed output → schema-validated, retried, then safe fallback.
 
 ## 3. Data Flow for UC-1 (pre-visit brief)

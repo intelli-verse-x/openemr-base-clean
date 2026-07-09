@@ -31,7 +31,8 @@ from .verification import verify
 # Keyword -> tool intent routing (cheap, deterministic, auditable).
 _INTENT_MAP: list[tuple[tuple[str, ...], list[str]]] = [
     (("interact", "interaction", "contraindicat", "conflict"), ["get_medications", "get_allergies"]),
-    (("med", "drug", "prescription", "dose", "dosage", "taking"), ["get_medications", "get_allergies"]),
+    # NB: use specific stems, not bare "med" — "med" would false-match "medical history".
+    (("medication", "medicine", "meds", "drug", "prescription", "dose", "dosage", "taking", "pill"), ["get_medications", "get_allergies"]),
     (("lab", "result", "a1c", "hba1c", "cholesterol", "creatinine", "trend", "panel"), ["get_lab_results"]),
     (("allerg",), ["get_allergies"]),
     (("problem", "diagnos", "condition", "history of"), ["get_problems"]),
@@ -60,6 +61,58 @@ _GREETINGS = {
     "hi", "hy", "hey", "hii", "hiii", "heyy", "hello", "helo", "yo", "sup",
     "hola", "namaste", "test", "ok", "okay", "thanks", "thank you", "ty",
 }
+
+
+def _explicit_absences(message: str, facts: list[Fact]) -> list[str]:
+    """State absence explicitly when a specific entity is asked for but not on file.
+
+    Case-study requirement: handle missing data and false-premise questions ("why
+    does this patient have hypertension?") by saying it is NOT on file, rather than
+    dumping a generic summary. Everything stays grounded — we only report absence.
+    """
+    m = f" {message.lower()} "
+    notes: list[str] = []
+
+    def blob(kinds: tuple[str, ...]) -> str:
+        return " ".join(f.value.lower() for f in facts if f.kind in kinds)
+
+    # 1) Imaging — there is no imaging tool / no imaging in the demo data.
+    if any(k in m for k in (" mri ", " ct ", "ct scan", "x-ray", "xray", "imaging",
+                            "ultrasound", "radiolog", " scan ", "x ray")):
+        notes.append("no imaging/radiology studies on file")
+
+    # 2) Named lab analytes requested but not present in the returned labs.
+    labs = blob(("lab_result",))
+    for kw, label in (("hba1c", "HbA1c"), ("a1c", "HbA1c"), ("cholesterol", "cholesterol"),
+                      ("creatinine", "creatinine"), ("glucose", "glucose"), ("ldl", "LDL"),
+                      ("triglyceride", "triglycerides")):
+        if kw in m and kw not in labs and (label.lower() not in labs):
+            notes.append(f"no {label} result on file")
+
+    # 3) Blood pressure asked but no BP recorded in vitals.
+    if ("blood pressure" in m or " bp " in m) and "bp " not in blob(("vital",)):
+        notes.append("no blood-pressure reading on file")
+
+    # 4) Pregnancy status.
+    if "pregnan" in m:
+        notes.append("no pregnancy status on file")
+
+    # 5) Named medication asked but not on the med list.
+    meds = blob(("medication",))
+    for kw, label in (("insulin", "insulin"), ("metformin", "metformin"),
+                      ("warfarin", "warfarin"), ("statin", "a statin")):
+        if kw in m and kw not in meds:
+            notes.append(f"the patient is not on {label} per the record")
+
+    # 6) False-premise conditions: assert absence for problems not on the list.
+    problems = blob(("problem",))
+    for kw, label in (("hypertension", "hypertension"), ("diabet", "diabetes"),
+                      ("asthma", "asthma"), ("cancer", "cancer")):
+        if kw in m and kw not in problems and label.lower() not in problems and label.lower() not in labs:
+            notes.append(f"{label} is not on this patient's problem list")
+
+    # de-dup, preserve order
+    return list(dict.fromkeys(notes))
 
 
 def _is_smalltalk(message: str) -> bool:
@@ -166,6 +219,10 @@ async def handle_chat(req: ChatRequest) -> ChatResponse:
         facts = [f for f in facts if f.kind not in ("note",)]
         if len(facts) != before:
             missing.append("clinical notes hidden for your role")
+
+    # Explicitly state absence for specifically-requested items not on file (missing-data
+    # + false-premise handling) instead of silently returning a generic summary.
+    missing.extend(_explicit_absences(req.message, facts))
 
     # --- LLM synthesis (grounded) ------------------------------------------ #
     llm = get_llm()

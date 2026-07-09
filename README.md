@@ -1,3 +1,28 @@
+# Clinical Co-Pilot — AI agent embedded in OpenEMR
+
+> **AgentForge case study (Gauntlet AI).** This fork adds a production-grade Clinical
+> Co-Pilot: a conversational AI agent that gives physicians grounded, cited,
+> role-authorized answers about their patients in seconds.
+
+| | |
+|---|---|
+| 🌐 **Deployed application** | https://clinical-copilot.intelli-verse-x.ai |
+| 🔍 **Audit** (security / performance / architecture / data quality / HIPAA) | [`AUDIT.md`](AUDIT.md) |
+| 👤 **Target user + use cases** | [`USERS.md`](USERS.md) |
+| 🏗 **Agent architecture + plan** | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| 🤖 **Agent service** (FastAPI, tests, evals, observability, deploy) | [`clinical-copilot/`](clinical-copilot/) |
+| 💰 **AI cost analysis** (100 / 1K / 10K / 100K users) | [`clinical-copilot/COST_ANALYSIS.md`](clinical-copilot/COST_ANALYSIS.md) |
+| 📊 **Baseline load-test metrics** | [`clinical-copilot/BASELINE_METRICS.md`](clinical-copilot/BASELINE_METRICS.md) |
+| ✅ **QA report** | [`clinical-copilot/QA_REPORT.md`](clinical-copilot/QA_REPORT.md) |
+
+**Quickstart:** see [`clinical-copilot/README.md`](clinical-copilot/README.md) for local
+setup (OpenEMR via docker-compose + the agent service) and
+[`clinical-copilot/deploy/k8s.yaml`](clinical-copilot/deploy/k8s.yaml) for the
+Kubernetes deployment that powers the public URL. Only synthetic (Synthea) demo
+data is used — no real PHI.
+
+---
+
 [![Syntax Status](https://github.com/openemr/openemr/actions/workflows/syntax.yml/badge.svg)](https://github.com/openemr/openemr/actions/workflows/syntax.yml)
 [![Styling Status](https://github.com/openemr/openemr/actions/workflows/styling.yml/badge.svg)](https://github.com/openemr/openemr/actions/workflows/styling.yml)
 [![Testing Status](https://github.com/openemr/openemr/actions/workflows/test.yml/badge.svg)](https://github.com/openemr/openemr/actions/workflows/test.yml)

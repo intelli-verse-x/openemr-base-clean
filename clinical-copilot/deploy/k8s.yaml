@@ -1,0 +1,190 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clinical-copilot
+---
+# --- OpenEMR MariaDB (demo Synthea data only — no real PHI) ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: copilot-mariadb-data
+  namespace: clinical-copilot
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: copilot-mariadb
+  namespace: clinical-copilot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: copilot-mariadb
+  template:
+    metadata:
+      labels:
+        app: copilot-mariadb
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      tolerations:
+        - key: arch
+          operator: Equal
+          value: arm64
+          effect: NoSchedule
+      containers:
+        - name: mariadb
+          image: mariadb:11.4
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              value: openemr-demo-root
+            - name: MARIADB_DATABASE
+              value: openemr
+            - name: MARIADB_USER
+              value: openemr
+            - name: MARIADB_PASSWORD
+              value: openemr
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: ["healthcheck.sh", "--connect", "--innodb_initialized"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: copilot-mariadb-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: copilot-mariadb
+  namespace: clinical-copilot
+spec:
+  selector:
+    app: copilot-mariadb
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# --- Clinical Co-Pilot agent service ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clinical-copilot
+  namespace: clinical-copilot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: clinical-copilot
+  template:
+    metadata:
+      labels:
+        app: clinical-copilot
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      tolerations:
+        - key: arch
+          operator: Equal
+          value: arm64
+          effect: NoSchedule
+      containers:
+        - name: copilot
+          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v1
+          env:
+            - name: COPILOT_DB_HOST
+              value: copilot-mariadb
+            - name: COPILOT_DB_PORT
+              value: "3306"
+            - name: COPILOT_DB_USER
+              value: openemr
+            - name: COPILOT_DB_PASSWORD
+              value: openemr
+            - name: COPILOT_DB_NAME
+              value: openemr
+            - name: COPILOT_LLM_PROVIDER
+              value: mock
+            - name: COPILOT_ENVIRONMENT
+              value: prod
+          ports:
+            - containerPort: 8500
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8500
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8500
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clinical-copilot
+  namespace: clinical-copilot
+spec:
+  selector:
+    app: clinical-copilot
+  ports:
+    - port: 80
+      targetPort: 8500
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clinical-copilot-ingress
+  namespace: clinical-copilot
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:970547373533:certificate/c5a0e339-3eb5-4ff7-b9d3-7eccfb055331
+    alb.ingress.kubernetes.io/group.name: intelliverse-apis
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/load-balancer-name: intelliverse-apis-alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/security-groups: sg-01c4f3c9d4b5c5e98
+    alb.ingress.kubernetes.io/subnets: subnet-081072daa41808d00, subnet-0c12ed7ffedf6610d, subnet-0effa916462e32901
+    alb.ingress.kubernetes.io/success-codes: 200,301,302,303,307
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: alb
+  rules:
+    - host: clinical-copilot.intelli-verse-x.ai
+      http:
+        paths:
+          - backend:
+              service:
+                name: clinical-copilot
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix

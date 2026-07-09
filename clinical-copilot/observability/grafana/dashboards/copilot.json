@@ -1,0 +1,51 @@
+{
+  "title": "Clinical Co-Pilot",
+  "uid": "copilot",
+  "schemaVersion": 39,
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "stat", "title": "Requests (total)", "gridPos": {"h":4,"w":6,"x":0,"y":0},
+      "targets": [{"expr": "sum(copilot_requests_total)"}]
+    },
+    {
+      "type": "stat", "title": "Denied", "gridPos": {"h":4,"w":6,"x":6,"y":0},
+      "targets": [{"expr": "sum(copilot_requests_total{outcome=\"denied\"})"}]
+    },
+    {
+      "type": "stat", "title": "Degraded rate", "gridPos": {"h":4,"w":6,"x":12,"y":0},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{"expr": "sum(rate(copilot_requests_total{outcome=\"degraded\"}[5m])) / clamp_min(sum(rate(copilot_requests_total[5m])),0.001)"}]
+    },
+    {
+      "type": "stat", "title": "Verification pass rate", "gridPos": {"h":4,"w":6,"x":18,"y":0},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{"expr": "sum(rate(copilot_verification_total{result=\"pass\"}[5m])) / clamp_min(sum(rate(copilot_verification_total[5m])),0.001)"}]
+    },
+    {
+      "type": "timeseries", "title": "Latency p50 / p95 (s)", "gridPos": {"h":8,"w":12,"x":0,"y":4},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum(rate(copilot_request_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum(rate(copilot_request_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Tool calls by outcome", "gridPos": {"h":8,"w":12,"x":12,"y":4},
+      "targets": [{"expr": "sum(rate(copilot_tool_calls_total[5m])) by (tool, outcome)", "legendFormat": "{{tool}} {{outcome}}"}]
+    },
+    {
+      "type": "timeseries", "title": "Tool failure rate", "gridPos": {"h":8,"w":12,"x":0,"y":12},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{"expr": "sum(rate(copilot_tool_calls_total{outcome=\"error\"}[5m])) / clamp_min(sum(rate(copilot_tool_calls_total[5m])),0.001)"}]
+    },
+    {
+      "type": "timeseries", "title": "LLM tokens/s", "gridPos": {"h":8,"w":6,"x":12,"y":12},
+      "targets": [{"expr": "sum(rate(copilot_llm_tokens_total[5m])) by (kind)", "legendFormat": "{{kind}}"}]
+    },
+    {
+      "type": "timeseries", "title": "Retries/s", "gridPos": {"h":8,"w":6,"x":18,"y":12},
+      "targets": [{"expr": "sum(rate(copilot_retries_total[5m])) by (stage)", "legendFormat": "{{stage}}"}]
+    }
+  ]
+}

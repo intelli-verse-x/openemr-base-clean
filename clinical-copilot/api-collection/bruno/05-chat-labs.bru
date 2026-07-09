@@ -1,0 +1,17 @@
+meta {
+  name: Chat — lab results (UC-3)
+  type: http
+  seq: 5
+}
+post {
+  url: {{baseUrl}}/chat
+  body: json
+}
+body:json {
+  {
+    "patient_id": 1,
+    "message": "Show recent lab results and flag anything abnormal.",
+    "user_id": "admin",
+    "role": "physician"
+  }
+}

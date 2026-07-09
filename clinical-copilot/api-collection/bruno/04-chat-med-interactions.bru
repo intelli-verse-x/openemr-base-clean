@@ -1,0 +1,17 @@
+meta {
+  name: Chat — medications & interactions (UC-2)
+  type: http
+  seq: 4
+}
+post {
+  url: {{baseUrl}}/chat
+  body: json
+}
+body:json {
+  {
+    "patient_id": 1,
+    "message": "What medications is the patient on and are there any interactions or allergy conflicts?",
+    "user_id": "admin",
+    "role": "physician"
+  }
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Chat — pre-visit brief (UC-1)
+  type: http
+  seq: 3
+}
+post {
+  url: {{baseUrl}}/chat
+  body: json
+}
+body:json {
+  {
+    "patient_id": 1,
+    "message": "Give me the pre-visit summary: what changed and anything I should flag?",
+    "user_id": "admin",
+    "role": "physician"
+  }
+}
+assert {
+  res.status: eq 200
+  res.body.authorized: eq true
+}

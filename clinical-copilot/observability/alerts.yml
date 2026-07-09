@@ -1,0 +1,44 @@
+groups:
+  - name: clinical-copilot
+    rules:
+      # Alert 1 — p95 end-to-end latency over the clinical budget (15s full brief).
+      - alert: CopilotP95LatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(copilot_request_latency_seconds_bucket[5m])) by (le)) > 15
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "Co-Pilot p95 latency > 15s"
+          description: >
+            p95 chat latency exceeds the 15s pre-visit-brief budget from USERS.md.
+            On-call: check OpenEMR DB latency, LLM provider status, and tool timers
+            on the Grafana board; if LLM is the cause, fail over to the fast model
+            or degrade to facts-only.
+
+      # Alert 2 — request error/degraded rate too high.
+      - alert: CopilotErrorRateHigh
+        expr: >
+          sum(rate(copilot_requests_total{outcome="degraded"}[5m]))
+          / clamp_min(sum(rate(copilot_requests_total[5m])), 0.001) > 0.10
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Co-Pilot degraded-response rate > 10%"
+          description: >
+            More than 10% of requests are degrading (tool or LLM failures).
+            On-call: inspect copilot_tool_calls_total{outcome="error"} to find the
+            failing tool; verify OpenEMR API/DB reachability via /ready.
+
+      # Alert 3 — tool failure rate.
+      - alert: CopilotToolFailureRateHigh
+        expr: >
+          sum(rate(copilot_tool_calls_total{outcome="error"}[5m]))
+          / clamp_min(sum(rate(copilot_tool_calls_total[5m])), 0.001) > 0.05
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Co-Pilot tool failure rate > 5%"
+          description: >
+            Data tools are failing above 5%. On-call: this usually means the
+            OpenEMR database or API is unhealthy or a schema drift occurred.
+            Check /ready and recent migrations; the agent degrades gracefully but
+            answers are incomplete until resolved.

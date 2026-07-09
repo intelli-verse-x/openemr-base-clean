@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+eval_results.json
+loadtest/*_stats.csv
+loadtest/*_failures.csv
+loadtest/*_stats_history.csv
+loadtest/*_exceptions.csv
+*.egg-info/

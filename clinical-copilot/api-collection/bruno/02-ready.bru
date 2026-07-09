@@ -1,0 +1,11 @@
+meta {
+  name: Ready (dependency check)
+  type: http
+  seq: 2
+}
+get {
+  url: {{baseUrl}}/ready
+}
+docs {
+  Returns 200 when OpenEMR DB + LLM + observability are reachable, else 503.
+}

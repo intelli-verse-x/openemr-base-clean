@@ -1,0 +1,20 @@
+meta {
+  name: Authz — admin denied (least privilege)
+  type: http
+  seq: 6
+}
+post {
+  url: {{baseUrl}}/chat
+  body: json
+}
+body:json {
+  {
+    "patient_id": 1,
+    "message": "Give me everything about this patient.",
+    "user_id": "admin",
+    "role": "admin"
+  }
+}
+assert {
+  res.body.authorized: eq false
+}

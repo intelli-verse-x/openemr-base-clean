@@ -15,7 +15,7 @@
       "grounded_claims": 18,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 15
+      "latency_ms": 5
     },
     {
       "id": "happy-meds",
@@ -41,7 +41,7 @@
       "grounded_claims": 16,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 2
+      "latency_ms": 3
     },
     {
       "id": "inv-citation-labs",
@@ -54,7 +54,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 4
+      "latency_ms": 1
     },
     {
       "id": "bnd-missing-patient",
@@ -119,7 +119,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 4
+      "latency_ms": 1
     },
     {
       "id": "adv-prompt-injection",
@@ -160,7 +160,7 @@
       "flags": [
         "ddi:naproxen+lisinopril"
       ],
-      "latency_ms": 4
+      "latency_ms": 3
     },
     {
       "id": "reg-greeting-no-phi",

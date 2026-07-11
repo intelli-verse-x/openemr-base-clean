@@ -1,7 +1,9 @@
 # QA Report — Clinical Co-Pilot
 
-**Date:** 2026-07-09 · **Build:** 0.1.0 · **Env:** local Docker (OpenEMR 8.2.0-dev flex +
-MariaDB 11.8), agent on Python 3.11, mock LLM (deterministic).
+**Date:** 2026-07-09 (updated 2026-07-11) · **Build:** 0.1.0 · **Env:** local Docker
+(OpenEMR 8.2.0-dev flex + MariaDB 11.8), agent on Python 3.11. Automated tests run on the
+deterministic mock LLM; the **live deployment runs a real model (gpt-4o via LiteLLM) with
+Langfuse tracing enabled** — see §12.
 **Result: PASS** — 19/19 automated tests, 12/12 eval cases, all 9 API-collection
 requests, all manual adversarial/edge/robustness checks. One defect found and fixed
 during QA (DB-down resilience). No open blockers for the code; deployment + demo video
@@ -133,8 +135,33 @@ degraded. All 19 tests still pass.
   prevents fabricated *references* but not all semantic drift (documented in
   `verification.py`).
 - **Clinical rule set is curated** (a defensible subset), not a complete interaction DB.
-- **Mock LLM** used for deterministic QA; a real key exercises the OpenAI path
-  (`app/llm.py`), which has ret/retry + JSON-schema validation already covered.
+- **Mock LLM** used for deterministic QA; the deployed service runs the real OpenAI path
+  (`app/llm.py`) — see §12.
+
+## 12. Post-review fix — real LLM + Langfuse live (2026-07-11)
+
+The first review correctly flagged that the deployed manifest hardcoded
+`COPILOT_LLM_PROVIDER: mock` and had no Langfuse keys, so the public URL never called a
+real model and produced no inspectable traces. Fixed and re-verified live:
+
+- **Real LLM**: deployment now injects credentials from a `copilot-llm` Kubernetes Secret
+  (never committed): `gpt-4o` via the org's LiteLLM proxy, with a per-app budget-capped
+  key. `deploy/k8s.yaml` uses `envFrom: secretRef` instead of inline values.
+- **Live verification** (public URL): `/ready` → `openemr_db ok, llm HTTP 200, langfuse
+  enabled`; `/chat` pre-visit brief → `usage: {"prompt": 3676, "completion": 845,
+  "model": "gpt-4o"}`, 9 grounded claims, real synthesis (states that lab-trend analysis
+  is impossible because lab dates are missing — grounded reasoning, not a fact dump),
+  latency ~11 s (inside the 15 s SLO).
+- **Langfuse tracing**: every request now writes a trace named `chat` with the request
+  correlation id as the trace id (e.g. `req-c4b25db2a26e`) plus an `llm_synthesis`
+  generation span carrying model, token usage, and latency — at
+  https://langfuse.intelli-verse-x.ai (self-hosted).
+- **Safety re-verified on the real-LLM path** (live): drug-interaction flags still fire
+  deterministically (pid 9 → 2 flags), admin role still denied before any data access,
+  bare greeting still returns no PHI and skips the LLM entirely.
+- **Two robustness fixes** made while wiring this up: tolerant JSON parsing for models
+  that fence output in ``` blocks, and `max_tokens` bound on completions to protect the
+  latency SLO. Mock-based eval suite re-run after both: 13/13 pass.
 
 ## 12. Pre-submission checklist
 
@@ -148,7 +175,7 @@ degraded. All 19 tests still pass.
 - [x] Load tests 10 & 50 users + baseline metrics
 - [x] AI cost analysis (dev + 100/1K/10K/100K)
 - [x] README with setup + architecture
-- [ ] **Public deployment** (blocked: infra choice + GitHub token)
+- [x] **Public deployment** — https://clinical-copilot.intelli-verse-x.ai (EKS, real LLM + Langfuse; see §12)
 - [ ] **Demo video 3–5 min** (manual)
 - [ ] **Social post** (final submission only)
 

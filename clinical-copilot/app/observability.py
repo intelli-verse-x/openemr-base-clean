@@ -71,6 +71,8 @@ TOOL_LATENCY = Histogram(
 class _NoopSpan:
     def update(self, **_: Any) -> None: ...
     def end(self, **_: Any) -> None: ...
+    def generation(self, **_: Any) -> "_NoopSpan":
+        return self
 
 
 class Tracer:

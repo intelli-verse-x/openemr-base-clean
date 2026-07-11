@@ -110,7 +110,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: copilot
-          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v3
+          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v4
           env:
             - name: COPILOT_DB_HOST
               value: copilot-mariadb
@@ -122,10 +122,13 @@ spec:
               value: openemr
             - name: COPILOT_DB_NAME
               value: openemr
-            - name: COPILOT_LLM_PROVIDER
-              value: mock
             - name: COPILOT_ENVIRONMENT
               value: prod
+          # Real LLM + Langfuse credentials come from a Secret created out-of-band
+          # (kubectl create secret generic copilot-llm ...) — never committed to git.
+          envFrom:
+            - secretRef:
+                name: copilot-llm
           ports:
             - containerPort: 8500
           resources:

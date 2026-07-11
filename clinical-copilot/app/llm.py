@@ -22,9 +22,20 @@ recall a specific patient's chart quickly. Rules you MUST follow:
 - Every claim must list the fact_ids it is based on. If you cannot support a statement
   with a fact id, do not make it.
 - If data is missing, say so plainly; do not guess or infer values.
-- Be concise and scannable — the clinician has seconds.
+- Be concise and scannable — the clinician has seconds. At most 12 claims, one short
+  sentence each. Where values repeat over time, state the trend (e.g. "A1c rose 7.1 -> 8.4").
 - You do not diagnose or recommend treatment; you surface what is in the record.
 Return ONLY valid JSON: {"claims":[{"text":str,"fact_ids":[str]}],"answer_intro":str}."""
+
+
+def _parse_json_content(raw: str) -> dict[str, Any]:
+    """Parse model output tolerantly: some providers/proxies wrap JSON in ```fences```."""
+    text = (raw or "").strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[:-3]
+    return json.loads(text or "{}")
 
 
 def _facts_block(facts: list[Fact]) -> str:
@@ -82,12 +93,13 @@ class OpenAILLM:
                 resp = self._client.chat.completions.create(
                     model=self._model, messages=msgs,
                     response_format={"type": "json_object"}, temperature=0.1,
+                    max_tokens=900,  # bound completion so p95 stays inside the latency SLO
                 )
                 usage = resp.usage
                 if usage:
                     LLM_TOKENS.labels("prompt").inc(usage.prompt_tokens)
                     LLM_TOKENS.labels("completion").inc(usage.completion_tokens)
-                data = json.loads(resp.choices[0].message.content or "{}")
+                data = _parse_json_content(resp.choices[0].message.content or "{}")
                 data["_usage"] = {
                     "prompt": getattr(usage, "prompt_tokens", 0),
                     "completion": getattr(usage, "completion_tokens", 0),

@@ -229,11 +229,23 @@ async def handle_chat(req: ChatRequest) -> ChatResponse:
     history = [{"role": m.role, "content": m.content} for m in req.history]
     usage: dict = {}
     try:
-        with step_timer(LATENCY):  # coarse; per-step covered by tool timers
+        with step_timer(LATENCY) as llm_t:  # coarse; per-step covered by tool timers
             gen = llm.complete(req.message, facts, history)
         claims = gen.get("claims", [])
         intro = gen.get("answer_intro", "")
         usage = gen.get("_usage", {})
+        # Record the LLM call as a generation span on the trace (visible in Langfuse).
+        try:
+            trace.generation(
+                name="llm_synthesis",
+                model=str(usage.get("model", "mock")),
+                input={"question": req.message, "facts_count": len(facts)},
+                output={"claims": len(claims)},
+                usage={"input": usage.get("prompt", 0), "output": usage.get("completion", 0)},
+                metadata={"latency_s": round(llm_t.elapsed, 3)},
+            ).end()
+        except Exception:  # tracing must never break the request
+            pass
     except Exception as exc:
         degraded = True
         log.warning("llm failed, degrading to facts-only: %s", exc)

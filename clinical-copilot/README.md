@@ -29,6 +29,16 @@ OpenEMR chart  →  Co-Pilot panel (iframe)  →  FastAPI agent
                                              Observability: correlation IDs, Prometheus, Grafana, Langfuse
 ```
 
+## Live deployment
+
+Public URL: **https://clinical-copilot.intelli-verse-x.ai** (EKS, HTTPS via ALB).
+The deployed service runs a **real LLM (`gpt-4o` via a LiteLLM proxy)** and writes a
+**Langfuse trace per request** (trace id = the response's `correlation_id`) to a
+self-hosted Langfuse. `/ready` reports all three dependencies (DB, LLM, Langfuse) live.
+LLM/Langfuse credentials are injected from a Kubernetes Secret (`copilot-llm`) — see
+`deploy/k8s.yaml`; no secrets are committed. The deterministic mock LLM remains available
+for offline dev/eval (`COPILOT_LLM_PROVIDER=mock`).
+
 ## Quickstart
 
 ### 1. Run OpenEMR + demo data (repo root)

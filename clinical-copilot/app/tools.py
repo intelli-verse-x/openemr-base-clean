@@ -129,9 +129,14 @@ async def get_lab_results(principal: Principal, pid: int) -> ToolResult:
         for i, r in enumerate(rows):
             name = r.get("result_text") or r.get("result_code") or "lab"
             val = _round(r.get("result"))
+            # Skip unexpanded Synthea template junk (e.g. result literally "{entry.value}").
+            if "{" in val or val in ("", "UNK"):
+                continue
             units = r.get("units") or ""
             abn = (r.get("abnormal") or "").strip()
-            eff = clean_date(r.get("result_date") or r.get("date_report"))
+            # NB: clean_date each candidate separately — a zero-date ('0000-00-00') is a
+            # truthy string, so `a or b` would keep the junk and never fall back.
+            eff = clean_date(r.get("result_date")) or clean_date(r.get("date_report"))
             # Show the date inline so a physician never mistakes a stale value for a current one.
             dtxt = f" ({eff})" if eff else " (date unknown)"
             abntxt = f" [{abn}]" if abn else ""

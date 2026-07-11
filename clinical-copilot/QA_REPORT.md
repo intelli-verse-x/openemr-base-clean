@@ -159,9 +159,27 @@ real model and produced no inspectable traces. Fixed and re-verified live:
 - **Safety re-verified on the real-LLM path** (live): drug-interaction flags still fire
   deterministically (pid 9 → 2 flags), admin role still denied before any data access,
   bare greeting still returns no PHI and skips the LLM entirely.
-- **Two robustness fixes** made while wiring this up: tolerant JSON parsing for models
-  that fence output in ``` blocks, and `max_tokens` bound on completions to protect the
-  latency SLO. Mock-based eval suite re-run after both: 13/13 pass.
+- **Public, clickable traces**: traces are marked public (synthetic data only), every
+  `/chat` response returns a `trace_url`, and the UI shows model + token usage + a
+  "trace ↗" link — a grader can open the exact trace for any answer with one click,
+  no Langfuse login needed. Verified anonymously (HTTP 200).
+- **Robustness fixes the real-LLM path surfaced** (mock had hidden all of these):
+  1. Tolerant JSON parsing — the proxy returns ```-fenced output; also salvages complete
+     claims from a max_tokens-truncated response instead of discarding the generation.
+  2. `max_tokens` bound on completions to protect the latency SLO.
+  3. **Lab dates bug**: `procedure_result.date` rows are zero-dates in the Synthea data,
+     and `a or b` kept the truthy junk string — every lab rendered "(date unknown)".
+     Now zero-dates fall back to `procedure_report.date_report`, and unexpanded Synthea
+     template values (`{entry.value}`) are filtered. Live answers now trend labs with
+     real dates ("Creatinine rose 1.88 → 1.90 → 1.87 mg/dL (9/3/24 → 4/8/25 → 9/9/25)").
+  4. **Event-loop blocking**: the synchronous OpenAI call + per-request Langfuse flush
+     starved `/health` under concurrent load → liveness probes failed → pod restarts →
+     ALB 502/503s. LLM calls now run via `asyncio.to_thread`, flush happens only on
+     shutdown, and probes have explicit `timeoutSeconds`. Verified with a 12-concurrent
+     real-LLM burst: 12/12 HTTP 200, zero degraded, zero restarts.
+- Final live sweep after all fixes: **11/11 checks pass** (all six use cases, admin
+  denial, nurse note redaction, prompt injection, missing data, false premise, greeting,
+  missing patient) + `/health` `/ready` `/metrics` `/` all 200. Unit+eval: 20/20.
 
 ## 12. Pre-submission checklist
 

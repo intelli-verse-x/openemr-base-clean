@@ -101,6 +101,8 @@ class Tracer:
         if not self._client:
             return _NoopSpan()
         try:
+            if get_settings().langfuse_public_traces:
+                kw.setdefault("public", True)
             return self._client.trace(name=name, id=get_correlation_id(), **kw)
         except Exception:  # pragma: no cover
             return _NoopSpan()

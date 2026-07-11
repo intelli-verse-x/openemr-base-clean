@@ -62,7 +62,7 @@ async function send(){
     const d=await r.json();
     let html=esc(d.answer).replace(/\\n/g,'<br/>');
     if(d.citations && d.citations.length){ html+='<div class="meta">Sources: '+d.citations.map(c=>'<span class="cite">'+esc(c.label)+'</span>').join('')+'</div>'; }
-    html+='<div class="meta">'+(d.authorized?'✓ authorized':'✗ denied')+' · verify:'+(d.verification.passed?'pass':'fail')+' · grounded:'+d.verification.grounded_claims+' · '+d.latency_ms+'ms · '+d.correlation_id+(d.degraded?' · degraded':'')+'</div>';
+    html+='<div class="meta">'+(d.authorized?'✓ authorized':'✗ denied')+' · verify:'+(d.verification.passed?'pass':'fail')+' · grounded:'+d.verification.grounded_claims+' · '+d.latency_ms+'ms · '+d.correlation_id+(d.degraded?' · degraded':'')+(d.usage&&d.usage.model?' · '+esc(d.usage.model)+' ('+d.usage.prompt+'→'+d.usage.completion+' tok)':'')+(d.trace_url?' · <a href="'+d.trace_url+'" target="_blank" style="color:var(--accent)">trace ↗</a>':'')+'</div>';
     el.classList.toggle('denied', !d.authorized);
     el.innerHTML=html;
     history.push({role:'user',content:text}); history.push({role:'assistant',content:d.answer});

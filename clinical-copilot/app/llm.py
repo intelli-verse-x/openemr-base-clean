@@ -29,13 +29,29 @@ Return ONLY valid JSON: {"claims":[{"text":str,"fact_ids":[str]}],"answer_intro"
 
 
 def _parse_json_content(raw: str) -> dict[str, Any]:
-    """Parse model output tolerantly: some providers/proxies wrap JSON in ```fences```."""
+    """Parse model output tolerantly: some providers/proxies wrap JSON in ```fences```,
+    and a max_tokens-truncated response can end mid-string. Salvage complete claims
+    rather than discarding the whole generation."""
     text = (raw or "").strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1] if "\n" in text else ""
         if text.rstrip().endswith("```"):
             text = text.rstrip()[:-3]
-    return json.loads(text or "{}")
+    try:
+        return json.loads(text or "{}")
+    except json.JSONDecodeError:
+        # Truncated output: cut back to the last complete claim object and close the JSON.
+        cut = text.rfind("}")
+        while cut > 0:
+            candidate = text[: cut + 1] + "]}"
+            try:
+                data = json.loads(candidate)
+                if isinstance(data.get("claims"), list):
+                    return data
+            except json.JSONDecodeError:
+                pass
+            cut = text.rfind("}", 0, cut)
+        raise
 
 
 def _facts_block(facts: list[Fact]) -> str:
@@ -93,7 +109,7 @@ class OpenAILLM:
                 resp = self._client.chat.completions.create(
                     model=self._model, messages=msgs,
                     response_format={"type": "json_object"}, temperature=0.1,
-                    max_tokens=900,  # bound completion so p95 stays inside the latency SLO
+                    max_tokens=1400,  # bound completion so p95 stays inside the latency SLO
                 )
                 usage = resp.usage
                 if usage:

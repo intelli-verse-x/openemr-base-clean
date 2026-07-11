@@ -134,7 +134,7 @@ async def get_lab_results(pid: int, limit: int = 100) -> list[dict[str, Any]]:
            JOIN procedure_report pr ON pr.procedure_order_id = po.procedure_order_id
            JOIN procedure_result pres ON pres.procedure_report_id = pr.procedure_report_id
            WHERE po.patient_id = %s
-           ORDER BY COALESCE(pres.date, pr.date_report) DESC
+           ORDER BY COALESCE(NULLIF(pres.date, '0000-00-00 00:00:00'), pr.date_report) DESC
            LIMIT %s""",
         (pid, limit),
     )

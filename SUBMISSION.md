@@ -1,7 +1,42 @@
 # Submission — Clinical Co-Pilot (AgentForge / Gauntlet AI)
 
-**Checkpoint:** Early Submission (Thursday)
+**Checkpoint:** Resubmission (post-review fix — real LLM + Langfuse live)
 **Submit at:** https://portal.gauntletai.com → **Assignments** → Clinical Co-Pilot → Submit
+
+## ⚠ GitLab import — graders review the imported copy
+
+Graders review the repo imported into **GAlabs GitLab** (`labs.gauntletai.com`), not
+GitHub directly. Before submitting:
+
+1. Sign in at https://labs.gauntletai.com (Gauntlet credentials).
+2. Open https://labs.gauntletai.com/import/github/status and **re-run / refresh the
+   import** for `intelli-verse-x/openemr-base-clean` so the GitLab copy picks up the
+   latest commits.
+3. Verify in the GitLab repo that the newest commit (the "real LLM + Langfuse" /
+   lab-dates fixes) is present — compare the short hash with `git log --oneline -1`
+   on GitHub `main`.
+4. Then submit on the portal. If the portal asks for a repo URL, give the GitLab one
+   if that's what the assignment expects; otherwise the GitHub URL below.
+
+## Reviewer-fix summary (what changed since the FAILED review)
+
+The review flagged that the deployed manifest hardcoded `COPILOT_LLM_PROVIDER: mock`
+with no Langfuse keys — so the live agent never called a real model and produced no
+inspectable traces. Fixed and re-verified live (QA_REPORT.md §12):
+
+- Live deployment now runs **gpt-4o** (via LiteLLM proxy); credentials injected from a
+  K8s Secret (`envFrom: secretRef`), nothing committed.
+- **Langfuse trace per request** (trace id = response `correlation_id`) with an
+  `llm_synthesis` generation span (model, tokens, latency). Traces are marked **public**
+  (synthetic data only) — every chat response now returns a clickable `trace_url`, and
+  the UI shows model + token usage + a "trace ↗" link per answer.
+- Real synthesis verified live: lab **trends** with dates ("Creatinine rose 1.88 → 1.90
+  → 1.87 mg/dL (9/3/24 → 4/8/25 → 9/9/25)"), not a fact dump.
+- Fixed a data bug the mock had been hiding: zero-date `procedure_result.date` rows made
+  every lab "(date unknown)" — now falls back to `procedure_report.date_report`, and
+  Synthea template junk (`{entry.value}`) is filtered out.
+- Safety re-verified on the real-LLM path: interaction flags fire (pid 9 → 2 flags),
+  admin denied, greeting returns no PHI, prompt injection contained.
 
 ## Submit these three links
 

@@ -122,6 +122,7 @@ class ChatResponse(BaseModel):
     tools_used: list[str] = Field(default_factory=list)
     latency_ms: int = 0
     usage: dict[str, Any] = Field(default_factory=dict)
+    trace_url: str | None = Field(default=None, description="shareable Langfuse trace for this request")
 
 
 # --------------------------------------------------------------------------- #

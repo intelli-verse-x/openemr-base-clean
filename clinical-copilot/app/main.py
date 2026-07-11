@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
     await db.init_pool()
     log.info("clinical-copilot starting", extra={"version": __version__})
     yield
+    get_tracer().flush()  # drain any queued Langfuse events before exit
     await db.close_pool()
 
 

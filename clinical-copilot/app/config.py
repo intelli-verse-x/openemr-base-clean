@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
+    # Mark traces publicly shareable (demo deployment only — data is synthetic Synthea,
+    # so graders can inspect traces without a Langfuse login). Never enable with real PHI.
+    langfuse_public_traces: bool = False
+    langfuse_project_id: str = ""  # used to build shareable trace URLs in responses
 
     # --- Behaviour ---
     brief_tool_timeout_s: float = 8.0

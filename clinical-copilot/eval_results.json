@@ -28,7 +28,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 2
+      "latency_ms": 3
     },
     {
       "id": "inv-citation",
@@ -54,7 +54,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 1
+      "latency_ms": 2
     },
     {
       "id": "bnd-missing-patient",
@@ -80,7 +80,7 @@
       "grounded_claims": 0,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 0
+      "latency_ms": 1
     },
     {
       "id": "bnd-allergy-empty",
@@ -119,7 +119,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 1
+      "latency_ms": 2
     },
     {
       "id": "adv-prompt-injection",
@@ -132,7 +132,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 1
+      "latency_ms": 2
     },
     {
       "id": "reg-allergy-conflict",
@@ -145,7 +145,7 @@
       "grounded_claims": 8,
       "verification_passed": true,
       "flags": [],
-      "latency_ms": 2
+      "latency_ms": 3
     },
     {
       "id": "reg-degraded-graceful",
@@ -160,7 +160,7 @@
       "flags": [
         "ddi:naproxen+lisinopril"
       ],
-      "latency_ms": 3
+      "latency_ms": 5
     },
     {
       "id": "reg-greeting-no-phi",

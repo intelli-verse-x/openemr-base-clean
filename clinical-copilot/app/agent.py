@@ -6,9 +6,11 @@ correlation id, and PHI never enters logs (only ids/counts/timings).
 """
 from __future__ import annotations
 
+import asyncio
 import time
 
 from . import authz, tools
+from .config import get_settings
 from .llm import get_llm
 from .observability import (
     LATENCY,
@@ -230,7 +232,9 @@ async def handle_chat(req: ChatRequest) -> ChatResponse:
     usage: dict = {}
     try:
         with step_timer(LATENCY) as llm_t:  # coarse; per-step covered by tool timers
-            gen = llm.complete(req.message, facts, history)
+            # The OpenAI client is synchronous — run it off the event loop so long LLM
+            # calls never block /health probes or concurrent requests (liveness safety).
+            gen = await asyncio.to_thread(llm.complete, req.message, facts, history)
         claims = gen.get("claims", [])
         intro = gen.get("answer_intro", "")
         usage = gen.get("_usage", {})
@@ -312,9 +316,15 @@ async def handle_chat(req: ChatRequest) -> ChatResponse:
     outcome = "degraded" if degraded else "ok"
     REQUESTS.labels(outcome).inc()
     latency_ms = int((time.perf_counter() - start) * 1000)
+    s = get_settings()
+    trace_url = (
+        f"{s.langfuse_host.rstrip('/')}/public/traces/{cid}"
+        if (tracer.enabled and s.langfuse_public_traces) else None
+    )
     trace.update(output={"grounded": report.grounded_claims, "flags": len(report.rule_flags),
                          "degraded": degraded, "latency_ms": latency_ms})
-    tracer.flush()
+    # No per-request flush: the Langfuse SDK batches on a background thread. A synchronous
+    # flush here blocks the event loop under concurrency and can fail liveness probes.
     log.info("chat done", extra={"latency_ms": latency_ms, "tools": tools_used,
                                  "grounded": report.grounded_claims, "degraded": degraded})
 
@@ -329,4 +339,5 @@ async def handle_chat(req: ChatRequest) -> ChatResponse:
         tools_used=tools_used,
         latency_ms=latency_ms,
         usage=usage,
+        trace_url=trace_url,
     )

@@ -111,7 +111,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: copilot
-          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v13
+          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v14
           env:
             - name: COPILOT_DB_HOST
               value: copilot-mariadb

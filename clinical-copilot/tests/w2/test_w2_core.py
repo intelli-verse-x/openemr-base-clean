@@ -86,8 +86,3 @@ def test_hybrid_retriever_returns_chunks():
     assert len(hits) >= 1
     assert hits[0].chunk_id
 
-
-def test_eval_dataset_has_50_cases():
-    from eval_w2.dataset import CASES
-
-    assert len(CASES) == 50

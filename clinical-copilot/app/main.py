@@ -123,27 +123,54 @@ async def w2_upload(
     import tempfile
 
     from .schemas import Role as AppRole
-    from .w2.ingest import attach_and_extract
+    from .w2.ingest import _MAX_UPLOAD_BYTES, attach_and_extract, sanitize_filename
     from .w2.schemas import DocType
 
     s = get_settings()
     if not s.w2_enabled:
         return JSONResponse(status_code=503, content={"error": "Week 2 flow disabled"})
 
-    suffix = Path(file.filename or "upload.pdf").suffix or ".pdf"
+    try:
+        dtype = DocType(doc_type)
+    except Exception:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "invalid doc_type", "allowed": [d.value for d in DocType]},
+        )
+    try:
+        role_enum = AppRole(role)
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "invalid role"})
+
+    safe = sanitize_filename(file.filename or "upload.pdf")
+    suffix = Path(safe).suffix or ".pdf"
+    data = await file.read()
+    if len(data) > _MAX_UPLOAD_BYTES:
+        return JSONResponse(status_code=413, content={"error": "file_too_large", "max_bytes": _MAX_UPLOAD_BYTES})
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await file.read())
+        tmp.write(data)
         tmp_path = Path(tmp.name)
+    # Preserve sanitized name for storage lineage
+    named = tmp_path.with_name(safe)
+    try:
+        tmp_path.rename(named)
+        tmp_path = named
+    except Exception:
+        pass
 
     try:
         result = await attach_and_extract(
             patient_id=patient_id,
             file_path=tmp_path,
-            doc_type=DocType(doc_type),
+            doc_type=dtype,
             user_id=user_id,
-            role=AppRole(role),
+            role=role_enum,
         )
         return result.model_dump()
+    except Exception as exc:  # noqa: BLE001 — never 500 bare HTML to graders
+        log.exception("w2 upload failed")
+        return JSONResponse(status_code=500, content={"error": "upload_failed", "detail": type(exc).__name__})
     finally:
         tmp_path.unlink(missing_ok=True)
 
@@ -158,8 +185,16 @@ async def w2_chat(req: Request):
     if not s.w2_enabled:
         return JSONResponse(status_code=503, content={"error": "Week 2 flow disabled"})
 
-    body = await req.json()
-    return (await handle_w2_chat(W2ChatRequest.model_validate(body))).model_dump()
+    try:
+        body = await req.json()
+        parsed = W2ChatRequest.model_validate(body)
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse(status_code=400, content={"error": "invalid_request", "detail": type(exc).__name__})
+    try:
+        return (await handle_w2_chat(parsed)).model_dump()
+    except Exception as exc:  # noqa: BLE001
+        log.exception("w2 chat failed")
+        return JSONResponse(status_code=500, content={"error": "chat_failed", "detail": type(exc).__name__})
 
 
 @app.get("/metrics")

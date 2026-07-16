@@ -1,6 +1,6 @@
 # Week 2 HARD GATE evidence
 
-Generated: `2026-07-16T08:48:08.295830+00:00`
+Generated: `2026-07-16T08:50:37.865089+00:00`
 
 - Baseline passes gate: **True**
 - After injected regression, gate passes: **False** (must be False)

@@ -4,7 +4,7 @@
 **Repo (GitHub):** https://github.com/intelli-verse-x/openemr-base-clean  
 **Repo (GitLab graders):** https://labs.gauntletai.com/devashishbadlani/openemr-base-clean  
 **Deployed app:** https://clinical-copilot.intelli-verse-x.ai/  
-**Image:** `clinical-copilot:v13` (2 replicas)  
+**Image:** `clinical-copilot:v14` (2 replicas)  
 **Architecture:** [`W2_ARCHITECTURE.md`](./W2_ARCHITECTURE.md)
 
 ## Live verification (hardened) — PASS

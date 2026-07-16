@@ -140,6 +140,13 @@ def extract_document(
         notes = raw.setdefault("extraction_notes", [])
         if isinstance(notes, list):
             notes.append("vlm_path")
+        # Empty structured payload is not useful — treat as failure and mock.
+        if doc_type == DocType.lab_pdf and not raw.get("results"):
+            raise ValueError("empty lab results from VLM")
+        if doc_type == DocType.intake_form and not (
+            raw.get("chief_concern") or raw.get("field_citations") or raw.get("current_medications")
+        ):
+            raise ValueError("empty intake extraction from VLM")
         return raw
     except Exception as exc:  # noqa: BLE001 — degrade to mock for demo reliability
         log.warning("w2 vlm failed; using mock", extra={"error": type(exc).__name__})

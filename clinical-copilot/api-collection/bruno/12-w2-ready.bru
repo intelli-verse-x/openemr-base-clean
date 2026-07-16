@@ -1,0 +1,12 @@
+meta {
+  name: W2 — ready includes guideline index
+  type: http
+  seq: 12
+}
+get {
+  url: {{baseUrl}}/ready
+}
+assert {
+  res.status: eq 200
+  res.body.status: eq ready
+}

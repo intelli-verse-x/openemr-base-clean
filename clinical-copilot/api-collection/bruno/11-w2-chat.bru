@@ -1,0 +1,22 @@
+meta {
+  name: W2 — chat multimodal evidence
+  type: http
+  seq: 11
+}
+post {
+  url: {{baseUrl}}/w2/chat
+  body: json
+}
+body:json {
+  {
+    "patient_id": 1,
+    "message": "What changed, what should I pay attention to, and what guideline evidence supports that?",
+    "user_id": "admin",
+    "role": "physician",
+    "document_ids": []
+  }
+}
+assert {
+  res.status: eq 200
+  res.body.authorized: eq true
+}

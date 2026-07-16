@@ -72,8 +72,32 @@ cd observability && docker compose up -d
 | `GET /health` | Liveness (process alive) |
 | `GET /ready` | Readiness — checks OpenEMR DB, LLM, observability reachability (503 if not) |
 | `POST /chat` | Agent chat (see `api-collection/`) |
+| `POST /w2/upload` | **Week 2** — upload lab PDF or intake form, extract cited JSON |
+| `POST /w2/chat` | **Week 2** — supervisor routes intake-extractor + evidence-retriever |
 | `GET /metrics` | Prometheus metrics |
 | `GET /` | Embedded demo chat panel |
+
+## Week 2 — Multimodal Evidence Agent
+
+Week 1 behaviour (`POST /chat`) is unchanged. Week 2 adds document ingestion, hybrid RAG
+over a demo guideline corpus, and a supervisor + two workers (`intake-extractor`,
+`evidence-retriever`). See `../W2_ARCHITECTURE.md` and `../W2_ORCHESTRATION.md`.
+
+```bash
+# Extract (mock VLM in CI / offline dev)
+curl -F patient_id=1 -F doc_type=lab_pdf -F file=@fixtures/sample-lab.pdf \
+  http://127.0.0.1:8500/w2/upload
+
+# W2 chat with evidence retrieval
+curl -X POST http://127.0.0.1:8500/w2/chat -H 'Content-Type: application/json' \
+  -d '{"patient_id":1,"message":"What changed and what guideline evidence applies?"}'
+
+# 50-case eval gate (requires OpenEMR DB)
+COPILOT_LLM_PROVIDER=mock .venv/bin/python eval_w2/run_evals.py
+```
+
+Set `COPILOT_W2_ENABLED=false` to disable Week 2 routes. `/ready` reports `w2_guideline_index`,
+`w2_document_store`, and `w2_rerank` when W2 is enabled.
 
 ## Testing & evals
 

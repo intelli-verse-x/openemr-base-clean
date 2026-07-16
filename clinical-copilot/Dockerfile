@@ -6,9 +6,10 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir -e . || pip install --no-cache-dir \
     fastapi "uvicorn[standard]" pydantic pydantic-settings aiomysql httpx openai \
-    "langfuse>=2.53,<3" python-json-logger prometheus-client
+    "langfuse>=2.53,<3" python-json-logger prometheus-client python-multipart
 
 COPY app ./app
+COPY fixtures ./fixtures
 
 EXPOSE 8500
 # /ready validates OpenEMR DB + LLM + observability reachability.

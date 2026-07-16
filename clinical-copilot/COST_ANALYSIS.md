@@ -79,3 +79,20 @@ Infra = agent service compute + Postgres/Redis for session & audit + Prometheus/
 3. **Prompt/fact caching** — fixed prompt + repeat-patient facts.
 4. **Per-patient cache during a visit** — collapse the brief + follow-ups into shared context.
 5. **Async observability** — never let tracing/eval add latency or per-request cost on the hot path.
+
+## Week 2 — multimodal cost & latency (dev measurements)
+
+Measured with `COPILOT_LLM_PROVIDER=mock` locally and projected for production gpt-4o / vision.
+
+| Flow | p50 latency (mock) | p95 target (prod SLO) | Cost drivers |
+|---|---|---|---|
+| Document upload + extract (lab_pdf) | <200ms mock | <8s (VLM) | Vision tokens + schema validate |
+| Hybrid RAG retrieve+rerank | <50ms | <1.5s | Corpus tiny; Cohere rerank optional |
+| Full W2 chat (supervisor + W1 chart) | W1 + ~100ms | <13s | W1 synth + retrieval append |
+| 50-case eval suite | ~depends on DB | CI gate | Mock VLM; no PHI in logs |
+
+**Dev spend (Week 2 scaffolding):** mostly mock/offline — target <$5 incremental LLM if live VLM smoke run once.
+
+**Production projection (per follow-up visit prep):** 1 VLM extract (~$0.01–0.04) + 1 synthesis (~$0.01) + rerank (~$0.001) ≈ **$0.02–0.05 / encounter**.
+
+**Bottleneck:** live VLM on scanned PDFs (timeout 30s). Mitigation: mock in CI, page-limit, schema refuse on low confidence.

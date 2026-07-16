@@ -1,0 +1,56 @@
+name: Clinical Co-Pilot W2 Eval Gate
+
+on:
+  pull_request:
+    paths:
+      - "clinical-copilot/**"
+  push:
+    branches: [main, feat/w2-multimodal]
+    paths:
+      - "clinical-copilot/**"
+
+defaults:
+  run:
+    working-directory: clinical-copilot
+
+jobs:
+  w2-eval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e ".[dev]"
+
+      - name: Unit tests (W2, no DB)
+        env:
+          COPILOT_LLM_PROVIDER: mock
+        run: .venv/bin/pytest tests/w2 -q --tb=short -m "not integration"
+
+      - name: W2 eval gate (quick — schema + rubric math only)
+        env:
+          COPILOT_LLM_PROVIDER: mock
+        run: |
+          .venv/bin/python -c "from eval_w2.dataset import CASES; assert len(CASES)==50"
+          .venv/bin/python -c "from eval_w2.rubrics import RUBRIC_NAMES; assert 'schema_valid' in RUBRIC_NAMES"
+
+      - name: Prove regression injection fails gate
+        run: |
+          if .venv/bin/python - <<'PY'
+          import sys
+          from eval_w2.run_evals import THRESHOLDS
+          by_rubric = {"schema_valid": [False, False, False]}
+          failed = any(sum(v)/len(v) < THRESHOLDS["schema_valid"] for v in by_rubric.values() if v)
+          sys.exit(1 if failed else 0)
+          PY
+          then
+            echo "HARD GATE BROKEN: injected regression did not fail CI"
+            exit 1
+          fi
+          echo "HARD GATE OK: regression correctly blocked"

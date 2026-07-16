@@ -1,0 +1,20 @@
+meta {
+  name: W2 — upload lab PDF
+  type: http
+  seq: 10
+}
+post {
+  url: {{baseUrl}}/w2/upload
+  body: multipartForm
+}
+body:multipart-form {
+  patient_id: 1
+  doc_type: lab_pdf
+  user_id: admin
+  role: physician
+  file: @file(../../fixtures/sample-lab.pdf)
+}
+assert {
+  res.status: eq 200
+  res.body.schema_valid: eq true
+}

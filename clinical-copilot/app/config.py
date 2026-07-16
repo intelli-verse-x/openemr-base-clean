@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     max_encounters: int = 25
     environment: str = "dev"
 
+    # --- Week 2 multimodal ---
+    w2_enabled: bool = True
+    w2_rerank_enabled: bool = False  # Cohere rerank hook — hybrid score stand-in when false
+
     @property
     def llm_enabled(self) -> bool:
         return self.llm_provider != "mock" and bool(self.llm_api_key)

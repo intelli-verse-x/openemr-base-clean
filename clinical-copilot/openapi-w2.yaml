@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: Clinical Co-Pilot Week 2 API
+  version: 0.2.0
+paths:
+  /w2/upload:
+    post:
+      summary: Upload and extract lab PDF or intake form
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [patient_id, doc_type, file]
+              properties:
+                patient_id:
+                  type: integer
+                doc_type:
+                  type: string
+                  enum: [lab_pdf, intake_form]
+                user_id:
+                  type: string
+                  default: admin
+                role:
+                  type: string
+                  default: physician
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: ExtractResponse with schema_valid and cited extraction
+  /w2/chat:
+    post:
+      summary: Week 2 multimodal chat with supervisor routing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/W2ChatRequest"
+      responses:
+        "200":
+          description: W2ChatResponse with claims, supervisor_route, trace_url
+components:
+  schemas:
+    W2ChatRequest:
+      type: object
+      required: [patient_id, message]
+      properties:
+        patient_id:
+          type: integer
+        message:
+          type: string
+        user_id:
+          type: string
+        role:
+          type: string
+        document_ids:
+          type: array
+          items:
+            type: string
+        history:
+          type: array
+          items:
+            type: object

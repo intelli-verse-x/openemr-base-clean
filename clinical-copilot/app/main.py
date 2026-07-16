@@ -4,7 +4,7 @@ from __future__ import annotations
 import contextlib
 
 import httpx
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, File, Form, Request, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
@@ -76,6 +76,23 @@ async def ready() -> ReadyResponse:
     checks.append(ReadyCheck(name="langfuse", ok=True,
                              detail="enabled" if tracer.enabled else "disabled (no-op)"))
 
+    # Week 2 dependencies
+    if s.w2_enabled:
+        from .w2.rag.retriever import HybridRetriever
+
+        retriever = HybridRetriever()
+        checks.append(ReadyCheck(
+            name="w2_guideline_index",
+            ok=retriever.ready,
+            detail=f"{len(retriever._chunks)} chunks" if retriever.ready else "empty corpus",
+        ))
+        checks.append(ReadyCheck(name="w2_document_store", ok=True, detail="filesystem demo store"))
+        checks.append(ReadyCheck(
+            name="w2_rerank",
+            ok=True,
+            detail="cohere" if s.w2_rerank_enabled else "hybrid-score fallback",
+        ))
+
     all_ok = all(c.ok for c in checks)
     body = ReadyResponse(status="ready" if all_ok else "not_ready", checks=checks)
     return JSONResponse(status_code=200 if all_ok else 503, content=body.model_dump())
@@ -84,6 +101,58 @@ async def ready() -> ReadyResponse:
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest) -> ChatResponse:
     return await handle_chat(req)
+
+
+@app.post("/w2/upload")
+async def w2_upload(
+    patient_id: int = Form(...),
+    doc_type: str = Form(...),
+    user_id: str = Form("admin"),
+    role: str = Form("physician"),
+    file: UploadFile = File(...),
+):
+    """Upload lab PDF or intake form, extract structured JSON with citations."""
+    from pathlib import Path
+    import tempfile
+
+    from .schemas import Role as AppRole
+    from .w2.ingest import attach_and_extract
+    from .w2.schemas import DocType
+
+    s = get_settings()
+    if not s.w2_enabled:
+        return JSONResponse(status_code=503, content={"error": "Week 2 flow disabled"})
+
+    suffix = Path(file.filename or "upload.pdf").suffix or ".pdf"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        tmp_path = Path(tmp.name)
+
+    try:
+        result = await attach_and_extract(
+            patient_id=patient_id,
+            file_path=tmp_path,
+            doc_type=DocType(doc_type),
+            user_id=user_id,
+            role=AppRole(role),
+        )
+        return result.model_dump()
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+@app.post("/w2/chat")
+async def w2_chat(req: Request):
+    """Week 2 multimodal chat — supervisor routes intake-extractor + evidence-retriever."""
+    from .w2.agent import handle_w2_chat
+    from .w2.schemas import W2ChatRequest
+
+    s = get_settings()
+    if not s.w2_enabled:
+        return JSONResponse(status_code=503, content={"error": "Week 2 flow disabled"})
+
+    body = await req.json()
+    return (await handle_w2_chat(W2ChatRequest.model_validate(body))).model_dump()
 
 
 @app.get("/metrics")

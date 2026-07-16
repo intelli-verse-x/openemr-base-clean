@@ -92,7 +92,7 @@ metadata:
   name: clinical-copilot
   namespace: clinical-copilot
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: clinical-copilot
@@ -100,6 +100,8 @@ spec:
     metadata:
       labels:
         app: clinical-copilot
+    # W2 document store is pod-local filesystem until OpenEMR FHIR write lands.
+    # Keep replicas=1 so upload + chat share extractions (demo).
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64

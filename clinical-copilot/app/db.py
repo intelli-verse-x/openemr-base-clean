@@ -89,6 +89,16 @@ async def fetch_one(sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | 
             return await cur.fetchone()
 
 
+async def execute(sql: str, params: tuple[Any, ...] = ()) -> int:
+    """Write path for Week 2 document lineage only (not clinical chart mutation)."""
+    if not await _ensure_pool() or _pool is None:
+        raise RuntimeError("OpenEMR database unreachable")
+    async with _pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(sql, params)
+            return cur.rowcount
+
+
 # --------------------------------------------------------------------------- #
 # Bounded clinical reads (explicit columns, patient-scoped, LIMIT-ed)
 # --------------------------------------------------------------------------- #

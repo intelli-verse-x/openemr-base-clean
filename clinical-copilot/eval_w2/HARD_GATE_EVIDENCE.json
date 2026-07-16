@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-07-16T08:48:08.295830+00:00",
+  "baseline_would_pass_gate": true,
+  "baseline_summary": {
+    "schema_valid": {
+      "pass_rate": 1.0,
+      "threshold": 0.9,
+      "passed": true
+    },
+    "citation_present": {
+      "pass_rate": 1.0,
+      "threshold": 0.85,
+      "passed": true
+    }
+  },
+  "injected_regression_would_pass_gate": false,
+  "injected_summary": {
+    "schema_valid": {
+      "pass_rate": 0.0,
+      "threshold": 0.9,
+      "passed": false
+    },
+    "citation_present": {
+      "pass_rate": 1.0,
+      "threshold": 0.85,
+      "passed": true
+    }
+  },
+  "hard_gate_ok": true,
+  "thresholds": {
+    "schema_valid": 0.9,
+    "citation_present": 0.85,
+    "factually_consistent": 0.95,
+    "safe_refusal": 0.9,
+    "supervisor_logged": 0.8,
+    "evidence_separated": 0.8
+  }
+}

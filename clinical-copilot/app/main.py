@@ -86,7 +86,14 @@ async def ready() -> ReadyResponse:
             ok=retriever.ready,
             detail=f"{len(retriever._chunks)} chunks" if retriever.ready else "empty corpus",
         ))
-        checks.append(ReadyCheck(name="w2_document_store", ok=True, detail="filesystem demo store"))
+        from .w2 import storage as w2_storage
+
+        store_ok = await w2_storage.document_store_ready()
+        checks.append(ReadyCheck(
+            name="w2_document_store",
+            ok=store_ok,
+            detail="mariadb copilot_w2_documents" if store_ok else "document store unavailable",
+        ))
         checks.append(ReadyCheck(
             name="w2_rerank",
             ok=True,

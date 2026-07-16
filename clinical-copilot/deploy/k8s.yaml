@@ -92,7 +92,7 @@ metadata:
   name: clinical-copilot
   namespace: clinical-copilot
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: clinical-copilot
@@ -100,8 +100,7 @@ spec:
     metadata:
       labels:
         app: clinical-copilot
-    # W2 document store is pod-local filesystem until OpenEMR FHIR write lands.
-    # Keep replicas=1 so upload + chat share extractions (demo).
+    # Extractions live in MariaDB (copilot_w2_documents) — multi-replica safe.
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
@@ -112,7 +111,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: copilot
-          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v10
+          image: 970547373533.dkr.ecr.us-east-1.amazonaws.com/clinical-copilot:v13
           env:
             - name: COPILOT_DB_HOST
               value: copilot-mariadb

@@ -1,13 +1,16 @@
-"""Vision extraction — mock for CI; OpenAI vision for prod/demo."""
+"""Vision extraction — PDF page→image when possible; schema is always the gate."""
 from __future__ import annotations
 
+import base64
+import io
 import json
+import tempfile
 from pathlib import Path
 from typing import Any
 
 from ..config import get_settings
 from ..observability import log
-from .schemas import DocType, DocumentCitation, W2SourceType
+from .schemas import DocType
 
 
 def _lab_row(source_id: str, test_name: str, value: str, **extra: Any) -> dict[str, Any]:
@@ -45,7 +48,13 @@ def _mock_lab_extraction(patient_id: int, source_id: str, fixture: dict[str, Any
             _lab_row(source_id, "HbA1c", "8.4", unit="%", reference_range="<5.7",
                      confidence=0.88, bbox=[0.12, 0.52, 0.50, 0.55]),
         ]
-    return {"doc_type": "lab_pdf", "patient_id": patient_id, "source_document_id": source_id, "results": rows}
+    return {
+        "doc_type": "lab_pdf",
+        "patient_id": patient_id,
+        "source_document_id": source_id,
+        "results": rows,
+        "extraction_notes": [],
+    }
 
 
 def _mock_intake_extraction(patient_id: int, source_id: str) -> dict[str, Any]:
@@ -67,7 +76,58 @@ def _mock_intake_extraction(patient_id: int, source_id: str) -> dict[str, Any]:
         "allergies": ["penicillin"],
         "family_history": ["type 2 diabetes (mother)"],
         "field_citations": {"chief_concern": cite},
+        "extraction_notes": [],
     }
+
+
+def _pdf_to_png_bytes(file_path: Path) -> bytes | None:
+    """Render first PDF page to PNG for vision models."""
+    try:
+        import pypdfium2 as pdfium
+
+        pdf = pdfium.PdfDocument(str(file_path))
+        if len(pdf) < 1:
+            return None
+        page = pdf[0]
+        bitmap = page.render(scale=2.0)
+        pil = bitmap.to_pil()
+        buf = io.BytesIO()
+        pil.save(buf, format="PNG")
+        return buf.getvalue()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("pdf render failed", extra={"error": type(exc).__name__})
+        return None
+
+
+def _pdf_text(file_path: Path) -> str:
+    try:
+        from pypdf import PdfReader
+
+        reader = PdfReader(str(file_path))
+        parts = []
+        for page in reader.pages[:2]:
+            parts.append(page.extract_text() or "")
+        return "\n".join(parts).strip()
+    except Exception:
+        return ""
+
+
+def _parse_json_content(raw_text: str) -> dict[str, Any]:
+    text = (raw_text or "").strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.startswith("json"):
+            text = text[4:].strip()
+    return json.loads(text or "{}")
+
+
+def _validate_nonempty(doc_type: DocType, raw: dict[str, Any]) -> None:
+    if doc_type == DocType.lab_pdf and not raw.get("results"):
+        raise ValueError("empty lab results from VLM")
+    if doc_type == DocType.intake_form and not (
+        raw.get("chief_concern") or raw.get("field_citations") or raw.get("current_medications")
+    ):
+        raise ValueError("empty intake extraction from VLM")
 
 
 def extract_document(
@@ -85,42 +145,51 @@ def extract_document(
             return _mock_lab_extraction(patient_id, source_document_id, fixture)
         return _mock_intake_extraction(patient_id, source_document_id)
 
-    # Production path: vision model with JSON-only prompt (schema described in prompt).
-    # Fall back to mock on any failure so graders always get schema-valid output.
-    try:
-        from openai import OpenAI
-        import base64
+    from openai import OpenAI
 
-        client = OpenAI(api_key=s.llm_api_key, base_url=s.llm_base_url, timeout=s.llm_timeout_s)
-        data = base64.b64encode(file_path.read_bytes()).decode()
-        # Many gateways reject application/pdf as image_url — prefer image MIME, else text hint.
+    client = OpenAI(api_key=s.llm_api_key, base_url=s.llm_base_url, timeout=s.llm_timeout_s)
+    schema_prompt = (
+        f"Extract {doc_type.value} into JSON. Required: "
+        "lab_pdf → results[] with test_name,value,unit,reference_range,collection_date,abnormal_flag,"
+        "confidence,citation{{source_type,source_id,page_or_section,field_or_chunk_id,quote_or_value,bbox}}. "
+        "intake_form → demographics, chief_concern, current_medications, allergies, family_history, "
+        "field_citations. Do NOT invent unread values — put uncertainty in extraction_notes. "
+        f"patient_id={patient_id} source_document_id={source_document_id} doc_type={doc_type.value}"
+    )
+
+    try:
         suffix = file_path.suffix.lower()
+        content_parts: list[dict[str, Any]]
+        path_note = "vlm_image"
+
         if suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif"}:
             mime = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
                     ".webp": "image/webp", ".gif": "image/gif"}[suffix]
-            content_parts: list[dict[str, Any]] = [
-                {"type": "text", "text": (
-                    f"Extract {doc_type.value} fields into JSON matching our lab/intake schema. "
-                    "Every field MUST include citation with page_or_section, field_or_chunk_id, quote_or_value. "
-                    "If unreadable, add to extraction_notes; do not invent values. "
-                    f"patient_id={patient_id} source_document_id={source_document_id} doc_type={doc_type.value}"
-                )},
+            data = base64.b64encode(file_path.read_bytes()).decode()
+            content_parts = [
+                {"type": "text", "text": schema_prompt},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}},
             ]
+        elif suffix == ".pdf":
+            png = _pdf_to_png_bytes(file_path)
+            if png:
+                data = base64.b64encode(png).decode()
+                content_parts = [
+                    {"type": "text", "text": schema_prompt + " (image is page 1 of the PDF)"},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{data}"}},
+                ]
+                path_note = "vlm_pdf_raster"
+            else:
+                text = _pdf_text(file_path)
+                if not text:
+                    raise ValueError("pdf_unreadable")
+                content_parts = [{
+                    "type": "text",
+                    "text": schema_prompt + "\n\nPDF TEXT (grounded source — extract only what appears):\n" + text[:6000],
+                }]
+                path_note = "vlm_pdf_text"
         else:
-            # PDF / unknown: ask model to return structured JSON from the demo lab template
-            # (scanned PDF rasterization is stretch). Still schema-validated upstream.
-            content_parts = [{
-                "type": "text",
-                "text": (
-                    f"Return JSON for a {doc_type.value} extraction for patient_id={patient_id}, "
-                    f"source_document_id={source_document_id}. "
-                    "If this is a lab PDF use Creatinine 1.9 mg/dL (H) and HbA1c 8.4% (H) dated 2026-07-01 "
-                    "with citations (page_or_section, field_or_chunk_id, quote_or_value, bbox). "
-                    "If intake_form: chief_concern Follow-up for elevated creatinine, meds lisinopril, "
-                    "allergy penicillin, family_history type 2 diabetes (mother), with field_citations."
-                ),
-            }]
+            raise ValueError(f"unsupported_suffix:{suffix}")
 
         resp = client.chat.completions.create(
             model=s.llm_model_synth,
@@ -128,27 +197,16 @@ def extract_document(
             response_format={"type": "json_object"},
             temperature=0.0,
         )
-        raw_text = (resp.choices[0].message.content or "").strip()
-        if raw_text.startswith("```"):
-            raw_text = raw_text.strip("`")
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:].strip()
-        raw = json.loads(raw_text or "{}")
+        raw = _parse_json_content(resp.choices[0].message.content or "")
         raw.setdefault("patient_id", patient_id)
         raw.setdefault("source_document_id", source_document_id)
         raw.setdefault("doc_type", doc_type.value)
         notes = raw.setdefault("extraction_notes", [])
         if isinstance(notes, list):
-            notes.append("vlm_path")
-        # Empty structured payload is not useful — treat as failure and mock.
-        if doc_type == DocType.lab_pdf and not raw.get("results"):
-            raise ValueError("empty lab results from VLM")
-        if doc_type == DocType.intake_form and not (
-            raw.get("chief_concern") or raw.get("field_citations") or raw.get("current_medications")
-        ):
-            raise ValueError("empty intake extraction from VLM")
+            notes.append(path_note)
+        _validate_nonempty(doc_type, raw)
         return raw
-    except Exception as exc:  # noqa: BLE001 — degrade to mock for demo reliability
+    except Exception as exc:  # noqa: BLE001
         log.warning("w2 vlm failed; using mock", extra={"error": type(exc).__name__})
         if doc_type == DocType.lab_pdf:
             out = _mock_lab_extraction(patient_id, source_document_id, fixture)

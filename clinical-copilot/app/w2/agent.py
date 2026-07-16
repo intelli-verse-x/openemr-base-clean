@@ -52,7 +52,7 @@ async def run_intake_extractor(state: GraphState) -> GraphState:
     route = list(state.get("route_log", []))
     route.append("handoff → intake-extractor")
     for doc_id in req.document_ids:
-        ext = storage.load_extraction(req.patient_id, doc_id)
+        ext = await storage.load_extraction(req.patient_id, doc_id)
         if ext:
             facts.append({"source": "extraction", "document_id": doc_id, "payload": ext})
             route.append(f"intake-extractor: loaded {doc_id}")

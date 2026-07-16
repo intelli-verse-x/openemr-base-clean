@@ -9,7 +9,8 @@
 | 🌐 **Deployed application** | https://clinical-copilot.intelli-verse-x.ai |
 | 🔍 **Audit** (security / performance / architecture / data quality / HIPAA) | [`AUDIT.md`](AUDIT.md) |
 | 👤 **Target user + use cases** | [`USERS.md`](USERS.md) |
-| 🏗 **Agent architecture + plan** | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| 🏗 **Agent architecture + plan** (Week 1) | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| 🏗 **Week 2 architecture defense** (multimodal + multi-agent + eval gate) | [`W2_ARCHITECTURE.md`](W2_ARCHITECTURE.md) |
 | 🤖 **Agent service** (FastAPI, tests, evals, observability, deploy) | [`clinical-copilot/`](clinical-copilot/) |
 | 💰 **AI cost analysis** (100 / 1K / 10K / 100K users) | [`clinical-copilot/COST_ANALYSIS.md`](clinical-copilot/COST_ANALYSIS.md) |
 | 📊 **Baseline load-test metrics** | [`clinical-copilot/BASELINE_METRICS.md`](clinical-copilot/BASELINE_METRICS.md) |

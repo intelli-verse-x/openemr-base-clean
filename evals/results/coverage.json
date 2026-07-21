@@ -1,0 +1,32 @@
+{
+  "access_control": {
+    "pass": 3,
+    "fail": 0,
+    "partial": 0
+  },
+  "exfiltration": {
+    "pass": 2,
+    "fail": 1,
+    "partial": 0
+  },
+  "prompt_injection": {
+    "pass": 3,
+    "fail": 0,
+    "partial": 0
+  },
+  "indirect_injection": {
+    "pass": 1,
+    "fail": 0,
+    "partial": 1
+  },
+  "state_corruption": {
+    "pass": 2,
+    "fail": 0,
+    "partial": 0
+  },
+  "cost_dos": {
+    "pass": 1,
+    "fail": 0,
+    "partial": 0
+  }
+}

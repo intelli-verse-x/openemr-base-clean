@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intelli-verse-x.ai/contracts/adversarial/v1/attack_result.schema.json",
+  "title": "AttackResult",
+  "version": "v1",
+  "type": "object",
+  "required": ["schema_version", "attempt_id", "campaign_id", "case_id", "category", "request", "response", "latency_ms"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "attempt_id": { "type": "string" },
+    "campaign_id": { "type": "string" },
+    "case_id": { "type": "string" },
+    "category": { "type": "string" },
+    "owasp_web": { "type": "array", "items": { "type": "string" } },
+    "owasp_llm": { "type": "array", "items": { "type": "string" } },
+    "request": { "type": "object" },
+    "response": { "type": "object" },
+    "http_status": { "type": "integer" },
+    "latency_ms": { "type": "integer", "minimum": 0 },
+    "error": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

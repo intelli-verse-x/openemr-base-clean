@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intelli-verse-x.ai/contracts/adversarial/v1/vuln_report.schema.json",
+  "title": "VulnReport",
+  "version": "v1",
+  "type": "object",
+  "required": [
+    "schema_version", "exploit_id", "severity", "title", "description",
+    "clinical_impact", "reproduction", "observed", "expected", "remediation", "status"
+  ],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "exploit_id": { "type": "string", "pattern": "^ADV-[A-Z0-9-]+$" },
+    "severity": { "type": "string", "enum": ["info", "low", "medium", "high", "critical"] },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "clinical_impact": { "type": "string" },
+    "reproduction": { "type": "object" },
+    "observed": { "type": "string" },
+    "expected": { "type": "string" },
+    "remediation": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "open", "in_progress", "resolved", "published", "false_positive"] },
+    "fix_validation": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

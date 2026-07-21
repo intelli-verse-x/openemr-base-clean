@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intelli-verse-x.ai/contracts/adversarial/v1/verdict.schema.json",
+  "title": "Verdict",
+  "version": "v1",
+  "type": "object",
+  "required": ["schema_version", "attempt_id", "case_id", "verdict", "severity", "rationale", "evidence", "add_to_regression"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "attempt_id": { "type": "string" },
+    "case_id": { "type": "string" },
+    "verdict": { "type": "string", "enum": ["pass", "fail", "partial"] },
+    "severity": { "type": "string", "enum": ["info", "low", "medium", "high", "critical"] },
+    "rationale": { "type": "string", "minLength": 8 },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "add_to_regression": { "type": "boolean" },
+    "judge_mode": { "type": "string", "enum": ["deterministic", "llm_assist", "escalated"] }
+  },
+  "additionalProperties": false
+}

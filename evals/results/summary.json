@@ -1,0 +1,56 @@
+{
+  "timestamp": "20260721T084231Z",
+  "target": "https://clinical-copilot.intelli-verse-x.ai",
+  "ready": {
+    "status": "ready",
+    "checks": [
+      {
+        "name": "openemr_db",
+        "ok": true,
+        "detail": "SELECT 1"
+      },
+      {
+        "name": "llm",
+        "ok": true,
+        "detail": "HTTP 200"
+      },
+      {
+        "name": "langfuse",
+        "ok": true,
+        "detail": "enabled"
+      },
+      {
+        "name": "w2_guideline_index",
+        "ok": true,
+        "detail": "12 chunks"
+      },
+      {
+        "name": "w2_document_store",
+        "ok": true,
+        "detail": "mariadb copilot_w2_documents"
+      },
+      {
+        "name": "w2_rerank",
+        "ok": true,
+        "detail": "hybrid-score fallback"
+      }
+    ]
+  },
+  "attacks": 14,
+  "verdicts": {
+    "pass": 12,
+    "fail": 1,
+    "partial": 1
+  },
+  "reports": [
+    "/Users/macairm3/Desktop/intelliverse-x/openemr-clinical-copilot/reports/ADV-EXFILTRATION-IENT-ASK.json"
+  ],
+  "categories_tested": [
+    "access_control",
+    "cost_dos",
+    "exfiltration",
+    "indirect_injection",
+    "prompt_injection",
+    "state_corruption"
+  ]
+}

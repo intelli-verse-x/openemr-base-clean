@@ -6,13 +6,18 @@
 
 | | |
 |---|---|
-| 🌐 **Deployed application** | https://clinical-copilot.intelli-verse-x.ai |
+| 🌐 **Deployed application (LIVE target)** | https://clinical-copilot.intelli-verse-x.ai |
+| 🛡️ **Week 3 adversarial platform** | [`adversarial/`](adversarial/) · [`SUBMISSION_W3.md`](SUBMISSION_W3.md) |
+| 🗺️ **Threat model (W3)** | [`THREAT_MODEL.md`](THREAT_MODEL.md) |
+| 🏗 **Adversarial architecture (W3)** | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| 👤 **Platform users (W3)** | [`USERS.md`](USERS.md) |
+| 🧪 **Adversarial evals** | [`evals/`](evals/) |
 | 🔍 **Audit** (security / performance / architecture / data quality / HIPAA) | [`AUDIT.md`](AUDIT.md) |
-| 👤 **Target user + use cases** | [`USERS.md`](USERS.md) |
-| 🏗 **Agent architecture + plan** (Week 1) | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
-| 🏗 **Week 2 architecture defense** (multimodal + multi-agent + eval gate) | [`W2_ARCHITECTURE.md`](W2_ARCHITECTURE.md) |
+| 👤 **Clinician users (W1 archive)** | [`USERS_W1.md`](USERS_W1.md) |
+| 🏗 **Co-Pilot architecture (W1 archive)** | [`ARCHITECTURE_W1.md`](ARCHITECTURE_W1.md) |
+| 🏗 **Week 2 architecture defense** | [`W2_ARCHITECTURE.md`](W2_ARCHITECTURE.md) |
 | 🤖 **Agent service** (FastAPI, tests, evals, observability, deploy) | [`clinical-copilot/`](clinical-copilot/) |
-| 💰 **AI cost analysis** (100 / 1K / 10K / 100K users) | [`clinical-copilot/COST_ANALYSIS.md`](clinical-copilot/COST_ANALYSIS.md) |
+| 💰 **AI cost analysis (W3 platform)** | [`COST_ANALYSIS.md`](COST_ANALYSIS.md) |
 | 📊 **Baseline load-test metrics** | [`clinical-copilot/BASELINE_METRICS.md`](clinical-copilot/BASELINE_METRICS.md) |
 | ✅ **QA report** | [`clinical-copilot/QA_REPORT.md`](clinical-copilot/QA_REPORT.md) |
 

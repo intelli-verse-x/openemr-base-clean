@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intelli-verse-x.ai/contracts/adversarial/v1/campaign_plan.schema.json",
+  "title": "CampaignPlan",
+  "version": "v1",
+  "type": "object",
+  "required": ["schema_version", "campaign_id", "category", "intensity", "max_mutations", "budget_usd", "target_base_url"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "campaign_id": { "type": "string", "minLength": 8 },
+    "category": {
+      "type": "string",
+      "enum": ["access_control", "exfiltration", "prompt_injection", "indirect_injection", "state_corruption", "cost_dos"]
+    },
+    "intensity": { "type": "string", "enum": ["smoke", "standard", "deep"] },
+    "max_mutations": { "type": "integer", "minimum": 0, "maximum": 50 },
+    "budget_usd": { "type": "number", "minimum": 0 },
+    "target_base_url": { "type": "string", "format": "uri" },
+    "seed_case_ids": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

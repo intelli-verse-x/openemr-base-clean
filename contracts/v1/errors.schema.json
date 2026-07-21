@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intelli-verse-x.ai/contracts/adversarial/v1/errors.schema.json",
+  "title": "AgentError",
+  "version": "v1",
+  "type": "object",
+  "required": ["schema_version", "error_code", "message", "agent"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "error_code": {
+      "type": "string",
+      "enum": [
+        "TargetUnreachable",
+        "BudgetExceeded",
+        "JudgeTimeout",
+        "NoFindingsInWindow",
+        "RegressionDetected",
+        "AllowlistDenied",
+        "ContractViolation"
+      ]
+    },
+    "message": { "type": "string" },
+    "agent": { "type": "string", "enum": ["orchestrator", "red_team", "judge", "documentation", "harness"] },
+    "details": { "type": "object" }
+  },
+  "additionalProperties": false
+}

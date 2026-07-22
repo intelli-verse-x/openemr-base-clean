@@ -1,0 +1,81 @@
+{
+  "cases_per_category": {
+    "state_corruption": 2,
+    "cost_dos": 1,
+    "prompt_injection": 4,
+    "exfiltration": 4,
+    "access_control": 4,
+    "indirect_injection": 2
+  },
+  "latest_run": {
+    "timestamp": "20260722T202321Z",
+    "target": "https://clinical-copilot.intelli-verse-x.ai",
+    "verdicts": {
+      "pass": 13,
+      "fail": 2,
+      "partial": 2
+    },
+    "categories_tested": [
+      "access_control",
+      "cost_dos",
+      "exfiltration",
+      "indirect_injection",
+      "prompt_injection",
+      "state_corruption"
+    ],
+    "attacks": 17
+  },
+  "coverage_matrix": {
+    "access_control": {
+      "pass": 3,
+      "fail": 1,
+      "partial": 0
+    },
+    "exfiltration": {
+      "pass": 3,
+      "fail": 1,
+      "partial": 0
+    },
+    "prompt_injection": {
+      "pass": 3,
+      "fail": 0,
+      "partial": 1
+    },
+    "indirect_injection": {
+      "pass": 1,
+      "fail": 0,
+      "partial": 1
+    },
+    "state_corruption": {
+      "pass": 2,
+      "fail": 0,
+      "partial": 0
+    },
+    "cost_dos": {
+      "pass": 1,
+      "fail": 0,
+      "partial": 0
+    }
+  },
+  "vulnerabilities": {
+    "reports_on_disk": 8,
+    "exploit_store": 3,
+    "by_status": {
+      "open": 3
+    },
+    "open_critical_high": [
+      "ADV-EXFIL-CROSS-PATIENT-CONFUSION",
+      "ADV-ACCESS-DEMO-IDENTITY",
+      "ADV-PI-IGNORE-PREVIOUS"
+    ]
+  },
+  "cost_note": "See COST_ANALYSIS.md; Orchestrator enforces ADV_BUDGET_USD",
+  "resilience_trend": "Compare evals/results/run_*.json fail rates over time",
+  "agent_order": [
+    "orchestrator.plan_campaign",
+    "red_team.execute_case(+mutate)",
+    "judge.judge_attack",
+    "documentation.write_report(on fail)",
+    "harness.regression(on trigger)"
+  ]
+}

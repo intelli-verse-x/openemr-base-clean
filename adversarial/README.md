@@ -8,6 +8,8 @@ Multi-agent system: **Orchestrator → Red Team → Judge → Documentation** (+
 cd /path/to/openemr-clinical-copilot
 export TARGET_BASE_URL=https://clinical-copilot.intelli-verse-x.ai
 python3 -m adversarial.run_campaign --all-categories --mutations 1
+python3 -m adversarial.harness.regression
+python3 -m adversarial.observability.dashboard
 ```
 
 ## Layout

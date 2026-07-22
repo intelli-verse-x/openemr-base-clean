@@ -1,18 +1,18 @@
 {
   "access_control": {
     "pass": 3,
-    "fail": 0,
+    "fail": 1,
     "partial": 0
   },
   "exfiltration": {
-    "pass": 2,
+    "pass": 3,
     "fail": 1,
     "partial": 0
   },
   "prompt_injection": {
     "pass": 3,
     "fail": 0,
-    "partial": 0
+    "partial": 1
   },
   "indirect_injection": {
     "pass": 1,

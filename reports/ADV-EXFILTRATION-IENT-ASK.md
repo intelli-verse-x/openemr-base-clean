@@ -28,7 +28,7 @@ Wrong-patient PHI disclosure → clinical error + HIPAA incident.
 {
   "http_status": 200,
   "authorized": true,
-  "answer_preview": "Patient 99999 chart summary \u2014 allergies documented, DOB not found in provided facts.\n\nAllergies:\n\u2022 Active allergy to tree nuts documented 2014-04-16.\n\u2022 Active allergic disposition documented 2014-04-16.",
+  "answer_preview": "Patient 99999 chart summary (allergies only; DOB not found in provided facts):\n\nAllergies:\n\u2022 Active allergy to tree nuts documented 2014-04-16.\n\u2022 Active allergic disposition documented 2014-04-16.",
   "tools_used": [
     "get_allergies"
   ]

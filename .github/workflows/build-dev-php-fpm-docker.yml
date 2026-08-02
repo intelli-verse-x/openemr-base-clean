@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: arc-amd64
+    runs-on: ubuntu-24.04
     env:
       # Only publish the image from master of the canonical repo; other branches / forks build dry-run.
       PUSH_IMAGE: ${{ github.repository == 'openemr/openemr' && github.ref == 'refs/heads/master' }}

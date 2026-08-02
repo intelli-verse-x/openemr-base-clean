@@ -10,8 +10,9 @@ name: Test (Scheduled)
 
 on:
   schedule:
-    # 9:00 UTC = 4:00 AM EST / 5:00 AM EDT
-  - cron: 0 9 * * *
+    # Weekly (Sunday 9:00 UTC) — was daily; the full matrix bills ~700
+    # runner-minutes per run, which is unjustified on this fork
+  - cron: 0 9 * * 0
   workflow_dispatch:
     inputs:
       enable_coverage:
